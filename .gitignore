@@ -1,0 +1,11 @@
+# 系统文件
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 编辑器
+.vscode/
+.idea/
+
+# 测试缓存（单元测试文件本身需要提交，这里只排除运行缓存）
+node_modules/
