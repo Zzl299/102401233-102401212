@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>数据流图与状态流转图</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Microsoft YaHei", "PingFang SC", sans-serif; background: #F8FAFC; padding: 36px 28px; }
+  h1 { font-size: 24px; text-align: center; color: #1F2937; margin-bottom: 6px; }
+  .sub { text-align: center; color: #6B7280; font-size: 13px; margin-bottom: 30px; }
+  .section { background: #fff; border: 1.5px solid #E5E7EB; border-radius: 16px; padding: 24px 26px; margin-bottom: 30px; box-shadow: 0 2px 8px rgba(17,24,39,.05); }
+  .section h2 { font-size: 17px; color: #1F2937; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+  .section h2::before { content: ""; width: 5px; height: 17px; border-radius: 3px; background: #3B82F6; }
+  .flow-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .node { border: 1.5px solid #93C5FD; background: #EFF6FF; color: #1E40AF; border-radius: 12px; padding: 12px 16px; text-align: center; min-width: 150px; font-size: 13.5px; }
+  .node strong { display: block; font-size: 14.5px; margin-bottom: 3px; }
+  .node .fn { font-size: 11.5px; color: #6B7280; font-family: Consolas, monospace; }
+  .node.green { border-color: #A7F3D0; background: #ECFDF5; color: #065F46; }
+  .node.orange { border-color: #FDBA74; background: #FFF4ED; color: #9A3412; }
+  .node.grey { border-color: #D1D5DB; background: #F3F4F6; color: #374151; }
+  .node.storage { border-style: dashed; }
+  .arrow-h { font-size: 22px; color: #94A3B8; font-weight: 700; }
+  .arrow-h.blue { color: #3B82F6; }
+  .state-box { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; }
+  .state { border-radius: 14px; padding: 16px 22px; text-align: center; min-width: 200px; }
+  .state.active { background: #FFF4ED; border: 2px solid #F97316; }
+  .state.done { background: #F3F4F6; border: 2px solid #9CA3AF; }
+  .state .t { font-size: 17px; font-weight: 800; }
+  .state .s { font-size: 12.5px; color: #6B7280; margin-top: 5px; line-height: 1.6; }
+  .state.active .t { color: #F97316; }
+  .state.done .t { color: #6B7280; }
+  .trans { text-align: center; font-size: 12.5px; color: #374151; }
+  .trans .arr { display: block; font-size: 22px; line-height: 1; margin: 4px 0; }
+  .trans .arr.up { color: #3B82F6; }
+  .trans .arr.dn { color: #10B981; }
+  .trans .fn { color: #9CA3AF; font-family: Consolas, monospace; font-size: 11px; }
+  .tail-note { text-align: center; margin-top: 16px; font-size: 12.5px; color: #6B7280; background: #F3F4F6; border-radius: 10px; padding: 10px; max-width: 760px; margin-left: auto; margin-right: auto; line-height: 1.7; }
+</style>
+</head>
+<body>
+  <h1>图 2：数据流图与状态流转图</h1>
+  <p class="sub">发布 —— 搜索 —— 详情 —— 状态更新 的数据走向</p>
+
+  <!-- 数据流 -->
+  <div class="section">
+    <h2>数据流（单向，视图层 → 数据层 → 持久层 → 视图重渲染）</h2>
+    <div class="flow-row">
+      <div class="node"><strong>用户操作</strong>发布 / 搜索 / 筛选 / 标记<span class="fn">DOM 事件</span></div>
+      <div class="arrow-h blue">→</div>
+      <div class="node orange"><strong>界面层 app.js</strong>路由 · 视图渲染 · 交互<span class="fn">render*/bind*/route</span></div>
+      <div class="arrow-h blue">→</div>
+      <div class="node green"><strong>数据层 store.js</strong>校验 · 增删改查 · 搜索<span class="fn">isValidPublishData / createItem / updateStatus / searchItems</span></div>
+      <div class="arrow-h blue">→</div>
+      <div class="node grey storage"><strong>持久层 localStorage</strong>JSON 存储<span class="fn">lf_items_v1 / lf_owner_v1</span></div>
+      <div class="arrow-h blue">→</div>
+      <div class="node"><strong>视图重渲染</strong>列表 / 详情 / 统计实时更新<span class="fn">UI 同步</span></div>
+    </div>
+    <div class="tail-note">⚠ 存储不可用（如浏览器隐私模式）时自动降级为内存存储，保证功能可用；所有用户输入经 escapeHtml 转义后渲染，防止 XSS。</div>
+  </div>
+
+  <!-- 状态流转 -->
+  <div class="section">
+    <h2>信息状态流转（发布者可操作，状态驱动界面变化）</h2>
+    <div class="state-box">
+      <div class="state active">
+        <div class="t">进行中 active</div>
+        <div class="s">寻物 → 寻找中<br>招领 → 待认领</div>
+      </div>
+      <div class="trans">
+        <span class="arr dn">→</span>
+        <span>标记为已完成</span>
+        <span class="fn">updateStatus(id, 'done')</span>
+      </div>
+      <div class="state done">
+        <div class="t">已完成 done</div>
+        <div class="s">寻物 → 已找到<br>招领 → 已归还</div>
+      </div>
+    </div>
+    <div class="state-box" style="margin-top:10px;">
+      <div class="trans" style="width:100%;">
+        <span class="arr up">←</span>
+        <span>恢复为进行中（误标 / 情况变化时）</span>
+        <span class="fn">updateStatus(id, 'active')</span>
+      </div>
+    </div>
+    <div class="tail-note">发布成功时默认状态为 active；标记 done 后详情页不再展示联系入口、列表置灰并排到后面，避免失主被无效联系打扰。</div>
+  </div>
+</body>
+</html>
